@@ -1,0 +1,189 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local LocalPlayer = Players.LocalPlayer
+local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.IgnoreGuiInset = true
+
+local openButton = Instance.new("TextButton")
+openButton.Size = UDim2.new(0, 80, 0, 40)
+openButton.Position = UDim2.new(0, 20, 0.5, -20)
+openButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+openButton.Text = "OPEN"
+openButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+openButton.Font = Enum.Font.SourceSansBold
+openButton.TextSize = 18
+openButton.Parent = ScreenGui
+Instance.new("UICorner", openButton).CornerRadius = UDim.new(0, 8)
+
+local dragging, dragInput, dragStart, startPos
+local function updateButton(input)
+	local delta = input.Position - dragStart
+	openButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+openButton.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true; dragStart = input.Position; startPos = openButton.Position; input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end) end
+end)
+openButton.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end end)
+UserInputService.InputChanged:Connect(function(input) if dragging and input == dragInput then updateButton(input) end end)
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 260, 0, 180)
+Frame.Position = UDim2.new(0.35, 0, 0.3, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Frame.Active = true
+Frame.Draggable = true
+Frame.Visible = false
+Frame.Parent = ScreenGui
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 15)
+local Stroke = Instance.new("UIStroke", Frame)
+Stroke.Thickness = 3
+Stroke.Color = Color3.fromRGB(0, 120, 255)
+
+local Title = Instance.new("TextLabel", Frame)
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Position = UDim2.new(0, 0, 0.05, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "Ryoki Hub + Bypass"
+Title.TextColor3 = Color3.fromRGB(0, 170, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 22
+
+local ButtonsFrame = Instance.new("Frame", Frame)
+ButtonsFrame.Size = UDim2.new(1, 0, 1, -40)
+ButtonsFrame.Position = UDim2.new(0, 0, 0.2, 0)
+ButtonsFrame.BackgroundTransparency = 1
+
+local saveWP = Instance.new("TextButton", ButtonsFrame)
+saveWP.Size = UDim2.new(0, 100, 0, 40)
+saveWP.Position = UDim2.new(0.03, 0, 0.2, 0)
+saveWP.Text = "Salvar"
+saveWP.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+saveWP.TextColor3 = Color3.fromRGB(255, 255, 255)
+saveWP.Font = Enum.Font.SourceSansBold
+saveWP.TextSize = 18
+Instance.new("UICorner", saveWP).CornerRadius = UDim.new(0, 10)
+
+local teleportWP = Instance.new("TextButton", ButtonsFrame)
+teleportWP.Size = UDim2.new(0, 100, 0, 40)
+teleportWP.Position = UDim2.new(0.55, 0, 0.2, 0)
+teleportWP.Text = "Teleporta"
+teleportWP.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+teleportWP.TextColor3 = Color3.fromRGB(255, 255, 255)
+teleportWP.Font = Enum.Font.SourceSansBold
+teleportWP.TextSize = 18
+Instance.new("UICorner", teleportWP).CornerRadius = UDim.new(0, 10)
+
+local noclipBtn = Instance.new("TextButton", Frame)
+noclipBtn.Size = UDim2.new(0, 120, 0, 40)
+noclipBtn.Position = UDim2.new(0.5, -60, 0.5, 30)
+noclipBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+noclipBtn.Text = "Noclip: OFF"
+noclipBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
+noclipBtn.Font = Enum.Font.SourceSansBold
+noclipBtn.TextSize = 18
+Instance.new("UICorner", noclipBtn).CornerRadius = UDim.new(0, 10)
+
+local savedPosition
+local noclipEnabled = false
+local noclipConnection
+
+local function disableNoclip()
+	if noclipConnection then
+		noclipConnection:Disconnect()
+		noclipConnection = nil
+	end
+	noclipEnabled = false
+	noclipBtn.Text = "Noclip: OFF"
+	noclipBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
+end
+
+noclipBtn.MouseButton1Click:Connect(function()
+	noclipEnabled = not noclipEnabled
+	if noclipEnabled then
+		noclipBtn.Text = "Noclip: ON"
+		noclipBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
+		noclipConnection = RunService.Stepped:Connect(function()
+			if character and character:FindFirstChild("Humanoid") then
+				for _, part in pairs(character:GetDescendants()) do
+					if part:IsA("BasePart") then
+						part.CanCollide = false
+					end
+				end
+			end
+		end)
+	else
+		disableNoclip()
+	end
+end)
+
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+	character = newChar
+	humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+	disableNoclip()
+end)
+
+if character:FindFirstChildOfClass("Humanoid") then
+	character:FindFirstChildOfClass("Humanoid").Died:Connect(function()
+		disableNoclip()
+	end)
+end
+
+openButton.MouseButton1Click:Connect(function()
+	Frame.Visible = not Frame.Visible
+	if Frame.Visible then
+		openButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+		openButton.Text = "★"
+	else
+		openButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+		openButton.Text = "OPEN"
+	end
+end)
+
+local function addHoverAnimation(button)
+	button.MouseEnter:Connect(function()
+		button:TweenSize(UDim2.new(button.Size.X.Scale, button.Size.X.Offset + 10, button.Size.Y.Scale, button.Size.Y.Offset + 4), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.15, true)
+		button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	end)
+	button.MouseLeave:Connect(function()
+		button:TweenSize(UDim2.new(button.Size.X.Scale, button.Size.X.Offset - 10, button.Size.Y.Scale, button.Size.Y.Offset - 4), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.15, true)
+		button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	end)
+end
+
+addHoverAnimation(saveWP)
+addHoverAnimation(teleportWP)
+addHoverAnimation(noclipBtn)
+
+if getgenv then getgenv().syn = nil getgenv().hookfunc = nil getgenv().iswindowactive = nil getgenv().is_protosmaller_closure = nil end
+
+local rcons = getrawmetatable(game)
+if rcons and rcons.__namecall then
+	local oldNamecall = rcons.__namecall
+	rcons.__namecall = function(self, ...)
+		local method = getnamecallmethod()
+		local args = {...}
+		if method == "FireServer" or method == "InvokeServer" then
+			if type(args[1]) == "string" then
+				local eventName = args[1]:lower()
+				if eventName:find("kick") or eventName:find("ban") or eventName:find("report") or eventName:find("cheat") or eventName:find("anticheat") then
+					return nil
+				end
+			end
+		end
+		return oldNamecall(self, ...)
+	end
+end
+
+saveWP.MouseButton1Click:Connect(function()
+	if humanoidRootPart then savedPosition = humanoidRootPart.Position end
+end)
+
+teleportWP.MouseButton1Click:Connect(function
